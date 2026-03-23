@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عين جالوت: ملحمة القائد - نسخة المحترفين</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        #game-ui {
+            position: absolute; top: 20px; left: 20px; z-index: 10;
+            background: rgba(0,0,0,0.85); color: gold; padding: 20px;
+            border-radius: 15px; border: 2px solid gold; pointer-events: none;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        }
+        .level-indicator { font-size: 14px; color: #fff; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
+        .score-box { font-size: 28px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="game-ui">
+        <div id="level-name" class="level-indicator">المستوى 1: غرفة القيادة</div>
+        <div class="score-box">النقاط: <span id="score">0</span></div>
+        <div id="objective" style="font-size: 16px; color: #00ff00; margin-top: 5px;">اجمع معلومات الخطة بالنظر للأجسام</div>
+    </div>
+
+    <!-- المشهد مع تفعيل الضباب للجرافيك الاحترافي -->
+    <a-scene fog="type: exponential; color: #efd1b5; density: 0.03" renderer="antialias: true; colorManagement: true;">
+        
+        <a-assets>
+            <img id="wood" src="https://cdn.pixabay.com/photo/2016/01/25/11/44/wood-1160536_1280.jpg" crossorigin="anonymous">
+            <img id="map-texture" src="https://cdn.pixabay.com/photo/2017/06/14/08/20/map-2401458_1280.jpg" crossorigin="anonymous">
+            <audio id="horseSound" src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c35078174a.mp3?filename=horse-galloping-6139.mp3" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="swordSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2e259e8f6e.mp3?filename=sword-clash-21210.mp3" preload="auto" crossorigin="anonymous"></audio>
+            <audio id="victorySound" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0ec62f1c8a.mp3?filename=cinematic-drums-6547.mp3" preload="auto" crossorigin="anonymous"></audio>
+        </a-assets>
+
+        <!-- الإضاءة والبيئة -->
+        <a-entity environment="preset: egypt; dressingAmount: 200; groundColor: #c2b280; lighting: point; sunPosition: 1 5 -2"></a-entity>
+        <a-light type="ambient" color="#fff" intensity="0.5"></a-light>
+        <a-light type="directional" color="#ffd700" intensity="0.8" position="-1 2 1"></a-light>
+
+        <!-- الكاميرا ونظام HUD التفاعلي -->
+        <a-entity id="rig" position="0 0 5">
+            <a-camera id="camera" look-controls>
+                <a-entity id="cursor" 
+                    cursor="fuse: true; fuseTimeout: 1500"
+                    position="0 0 -1"
+                    geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                    material="color: #00ff00; shader: flat"
+                    animation__fusing="property: scale; startEvents: fusing; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
+                    animation__reset="property: scale; startEvents: mouseleave; dur: 500; to: 1 1 1">
+                </a-entity>
+                
+                <a-entity id="hud-panel" position="0 -0.6 -1.5" visible="false">
+                    <a-plane width="1.8" height="0.6" color="#111" opacity="0.9" radius="0.1" material="emissive: #222">
+                        <a-text id="hud-text-ar" value="" align="center" color="gold" width="1.6" position="0 0 0.01" font="https://cdn.aframe.io/fonts/Aileron-Semibold.fnt"></a-text>
+                    </a-plane>
+                </a-entity>
+            </a-camera>
+        </a-entity>
+
+        <!-- المستوى 1: الخيمة -->
+        <a-entity id="level1-content">
+            <!-- القائد قطز مع تأثير إضاءة -->
+            <a-entity id="char-qutuz" position="2.5 0 -3" rotation="0 -30 0" class="clickable" onclick="handleInteraction('commander')">
+                <a-cylinder color="#f5f5dc" radius="0.4" height="1.6"></a-cylinder>
+                <a-sphere position="0 1.1 0" radius="0.35" color="#ffe0bd"></a-sphere>
+                <a-cone position="0 1.4 0" radius-bottom="0.36" height="0.4" color="gold" material="emissive: #440"></a-cone>
+                <a-text value="القائد قطز" position="0 2.2 0" align="center" color="gold" width="6"></a-text>
+                <a-animation property="position" to="2.5 0.1 -3" dir="alternate" dur="2000" loop="true"></a-animation>
+            </a-entity>
+
+            <!-- الطاولة التكتيكية -->
+            <a-entity id="tactical-table" position="0 0 -2" class="clickable" onclick="handleInteraction('map')">
+                <a-box position="0 0.4 0" width="2.2" height="0.1" depth="1.4" src="#wood"></a-box>
+                <a-plane position="0 0.46 0" rotation="-90 0 0" width="2" height="1.2" src="#map-texture" material="emissive: #111"></a-plane>
+                <a-text value="خريطة الوادي" position="0 1.2 0" align="center" color="white" width="5"></a-text>
+            </a-entity>
+
+            <!-- المقاتل بيبرس -->
+            <a-entity id="char-soldier" position="-2.5 0 -3" rotation="0 40 0" class="clickable" onclick="handleInteraction('soldier')">
+                <a-cylinder color="#2f4f4f" radius="0.35" height="1.5"></a-cylinder>
+                <a-sphere position="0 1 0" radius="0.3" color="#ffe0bd"></a-sphere>
+                <a-entity position="0.5 0.5 0" geometry="primitive: cylinder; radius: 0.02; height: 2.5" material="color: #5c4033"></a-entity>
+                <a-text value="الظاهر بيبرس" position="0 2 0" align="center" color="#FFF" width="6"></a-text>
+            </a-entity>
+        </a-entity>
+
+        <!-- المستوى 2: توزيع القوات (يظهر لاحقاً) -->
+        <a-entity id="level2-content" visible="false">
+            <a-text value="المستوى 2: وزع الكمين" position="0 4 -6" align="center" color="gold" width="8"></a-text>
+            <!-- نقاط التمركز -->
+            <a-sphere id="point-1" class="clickable" position="-6 0.5 -10" radius="0.5" color="red" onclick="deploySoldier('point-1')">
+                <a-text value="تمركز هنا" position="0 1 0" align="center" width="4"></a-text>
+            </a-sphere>
+            <a-sphere id="point-2" class="clickable" position="6 0.5 -10" radius="0.5" color="red" onclick="deploySoldier('point-2')">
+                <a-text value="تمركز هنا" position="0 1 0" align="center" width="4"></a-text>
+            </a-sphere>
+            <a-sphere id="point-3" class="clickable" position="0 0.5 -15" radius="0.5" color="red" onclick="deploySoldier('point-3')">
+                <a-text value="تمركز هنا" position="0 1 0" align="center" width="4"></a-text>
+            </a-sphere>
+        </a-entity>
+
+        <!-- المستوى 3: إشارة البدء -->
+        <a-entity id="level3-content" visible="false" position="0 2 -4">
+            <a-text value="المغول في الفخ الآن!\nانظر للشعلة لإطلاق الإشارة" align="center" color="red" width="6"></a-text>
+            <a-box id="fire-signal" class="clickable" position="0 -1 0" width="0.5" height="2" color="#444" onclick="triggerVictory()">
+                <a-sphere position="0 1.2 0" radius="0.4" color="orange" material="emissive: #f00" 
+                          animation="property: scale; to: 1.5 1.5 1.5; dir: alternate; loop: true; dur: 500"></a-sphere>
+            </a-box>
+        </a-entity>
+
+        <!-- لوحة النهاية -->
+        <a-entity id="end-screen" visible="false" position="0 1.6 2">
+            <a-plane width="4" height="2.5" color="#000" opacity="0.9" material="emissive: #111">
+                <a-text id="final-msg" value="نصر مؤزر!" align="center" color="gold" width="6" position="0 0.4 0.1"></a-text>
+                <a-text id="final-score" value="نقاطك: 0" align="center" color="white" width="4" position="0 -0.2 0.1"></a-text>
+                <a-box class="clickable" position="0 -0.8 0.1" width="1.5" height="0.4" color="green" onclick="location.reload()">
+                    <a-text value="إعادة المحاولة" align="center" width="4"></a-text>
+                </a-box>
+            </a-plane>
+        </a-entity>
+
+    </a-scene>
+
+    <script>
+        let gameState = {
+            level: 1,
+            score: 0,
+            visitedInfo: 0,
+            deployedCount: 0,
+            visited: { map: false, soldier: false, commander: false }
+        };
+
+        const apiKey = ""; 
+
+        const content = {
+            map: "خريطة عين جالوت تكشف أن الوادي ضيق.. هذا هو مفتاح النصر.",
+            soldier: "بيبرس يقود الفرسان للتراجع الوهمي واستدراج العدو.",
+            commander: "قطز: 'يا إسلاماه!'.. خطتنا هي الصبر حتى يدخلوا الفخ كلياً."
+        };
+
+        function handleInteraction(type) {
+            if (gameState.level !== 1) return;
+
+            const hud = document.querySelector('#hud-panel');
+            const hudText = document.querySelector('#hud-text-ar');
+            
+            hud.setAttribute('visible', 'true');
+            hudText.setAttribute('value', content[type]);
+            speak(content[type]);
+
+            if (!gameState.visited[type]) {
+                gameState.visited[type] = true;
+                gameState.score += 50;
+                gameState.visitedInfo++;
+                updateUI();
+            }
+
+            if (gameState.visitedInfo >= 3) {
+                setTimeout(goToLevel2, 3000);
+            }
+        }
+
+        function goToLevel2() {
+            gameState.level = 2;
+            document.querySelector('#level-name').innerText = "المستوى 2: توزيع الكمين";
+            document.querySelector('#objective').innerText = "انظر لنقاط التمركز لتوزيع الفرسان";
+            document.querySelector('#level1-content').setAttribute('visible', 'false');
+            document.querySelector('#level2-content').setAttribute('visible', 'true');
+            document.querySelector('#hud-panel').setAttribute('visible', 'false');
+            speak("أحسنت. الآن وزع قواتك في الوادي بحذر.");
+        }
+
+        function deploySoldier(id) {
+            const point = document.querySelector('#' + id);
+            point.setAttribute('color', '#00ff00');
+            point.setAttribute('class', ''); // إزالة القابلية للضغط
+            
+            // إنشاء جندي في المكان
+            const soldier = document.createElement('a-entity');
+            soldier.setAttribute('geometry', 'primitive: cylinder; radius: 0.3; height: 1.5');
+            soldier.setAttribute('material', 'color: #2f4f4f');
+            soldier.setAttribute('position', point.getAttribute('position'));
+            document.querySelector('#level2-content').appendChild(soldier);
+
+            gameState.deployedCount++;
+            gameState.score += 100;
+            updateUI();
+
+            if (gameState.deployedCount >= 3) {
+                setTimeout(goToLevel3, 2000);
+            }
+        }
+
+        function goToLevel3() {
+            gameState.level = 3;
+            document.querySelector('#level-name').innerText = "المستوى 3: ساعة الصفر";
+            document.querySelector('#objective').innerText = "انتظر وصول المغول ثم أشعل الإشارة!";
+            document.querySelector('#level2-content').setAttribute('visible', 'true'); // نبقي الجنود
+            document.querySelector('#level3-content').setAttribute('visible', 'true');
+            speak("المغول دخلوا الوادي.. أطلق الإشارة الآن!");
+        }
+
+        function triggerVictory() {
+            gameState.score += 500;
+            updateUI();
+            document.querySelector('#level3-content').setAttribute('visible', 'false');
+            document.querySelector('#end-screen').setAttribute('visible', 'true');
+            document.querySelector('#final-score').setAttribute('value', "نقاطك النهائية: " + gameState.score);
+            
+            // مؤثرات صوتية
+            const drums = document.querySelector('#victorySound');
+            const horses = document.querySelector('#horseSound');
+            const swords = document.querySelector('#swordSound');
+            drums.play();
+            setTimeout(() => horses.play(), 1000);
+            setTimeout(() => swords.play(), 2000);
+
+            speak("نصر عظيم! لقد سحقت جيش المغول وحميت التاريخ.");
+        }
+
+        function updateUI() {
+            document.querySelector('#score').innerText = gameState.score;
+        }
+
+        async function speak(text) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: "بصوت قائد عسكري مهيب: " + text }] }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } } }
+                        },
+                        model: "gemini-2.5-flash-preview-tts"
+                    })
+                });
+                const result = await response.json();
+                playPCM(result.candidates[0].content.parts[0].inlineData.data);
+            } catch (e) {
+                const msg = new SpeechSynthesisUtterance(text);
+                msg.lang = 'ar-SA';
+                window.speechSynthesis.speak(msg);
+            }
+        }
+
+        function playPCM(base64Data) {
+            const binaryString = window.atob(base64Data);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+            const wavHeader = new ArrayBuffer(44);
+            const view = new DataView(wavHeader);
+            view.setUint32(0, 0x52494646, false); view.setUint32(4, 36 + len, true);
+            view.setUint32(8, 0x57415645, false); view.setUint32(12, 0x666d7420, false);
+            view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true); view.setUint32(24, 24000, true);
+            view.setUint32(28, 48000, true); view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true); view.setUint32(36, 0x64617461, false);
+            view.setUint32(40, len, true);
+            const blob = new Blob([wavHeader, bytes], { type: 'audio/wav' });
+            new Audio(URL.createObjectURL(blob)).play().catch(e => {});
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "Enter" || e.keyCode === 32) document.querySelector('#cursor').emit('click');
+        });
+    </script>
+</body>
+</html>
